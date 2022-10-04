@@ -42,6 +42,7 @@ USpeechComponent::USpeechComponent() {
 void USpeechComponent::InitializeComponent() {
     Super::InitializeComponent();
     InitializePollyClient();
+    InitializeLexClient();
 }
 
 void USpeechComponent::GenerateSpeech(
@@ -106,7 +107,7 @@ void USpeechComponent::PlayNextViseme() {
     }
 }
 
-void USpeechComponent::GenerateSpeechSync(const FString Text, const EVoiceId VoiceId) {
+void USpeechComponent::GenerateTextResponseSync(const FString Text) {
     if (Text.IsEmpty()) {
         UE_LOG(LogPollyMsg, Error, TEXT("Cannot generate speech (check input text)."));
         return;
@@ -115,7 +116,43 @@ void USpeechComponent::GenerateSpeechSync(const FString Text, const EVoiceId Voi
         UE_LOG(LogPollyMsg, Error, TEXT("Cannot generate speech during playback."));
         return;
     }
-    if (SynthesizeAudio(Text, VoiceId) && SynthesizeVisemes(Text, VoiceId)) {
+    if (GenerateResponse(Text)) {
+        UE_LOG(LogPollyMsg, Display, TEXT("Lex called successfully!"));
+    }
+}
+
+bool USpeechComponent::GenerateResponse(const FString& Text) {
+    LexOutcome LexTextOutcome = MyLexClient->RecognizeText(CreateLexTextRequest(Text));
+    if (LexTextOutcome.IsSuccess) {
+        FScopeLock lock(&Mutex);
+        ResponseText = AwsStringToFString(LexTextOutcome.LexOutputMsg);
+    }
+    else {
+        UE_LOG(LogPollyMsg, Error, TEXT("Lex failed to generate response. Error: %s"), *AwsStringToFString(LexTextOutcome.LexErrorMsg));
+    }
+    return LexTextOutcome.IsSuccess;
+}
+
+Aws::LexRuntimeV2::Model::RecognizeTextRequest USpeechComponent::CreateLexTextRequest(const FString& Text) const {
+    Aws::LexRuntimeV2::Model::RecognizeTextRequest LexRequest;
+    LexRequest.SetBotAliasId("605I57O4BQ");
+    LexRequest.SetBotId("CGV9V45HLE");
+    LexRequest.SetLocaleId("en_US");
+    LexRequest.SetSessionId("mhcs0000-aaaa-1111");
+    LexRequest.SetText(FStringToAwsString(Text));
+    return LexRequest;
+}
+
+void USpeechComponent::GenerateSpeechSync(const EVoiceId VoiceId) {
+    if (ResponseText.IsEmpty()) {
+        UE_LOG(LogPollyMsg, Error, TEXT("Cannot generate speech (check input text)."));
+        return;
+    }
+    if (IsSpeaking()) {
+        UE_LOG(LogPollyMsg, Error, TEXT("Cannot generate speech during playback."));
+        return;
+    }
+    if (SynthesizeAudio(ResponseText, VoiceId) && SynthesizeVisemes(ResponseText, VoiceId)) {
         UE_LOG(LogPollyMsg, Display, TEXT("Polly called successfully!"));
     }
 }
@@ -202,6 +239,10 @@ void USpeechComponent::GenerateVisemeEvents(FString VisemeJson) {
 
 void USpeechComponent::InitializePollyClient() {
     MyPollyClient = MakeUnique<PollyClient>();
+}
+
+void USpeechComponent::InitializeLexClient() {
+    MyLexClient = MakeUnique<LexClient>();
 }
 
 void USpeechComponent::SetTimer(float CurrentVisemeDurationSeconds) {

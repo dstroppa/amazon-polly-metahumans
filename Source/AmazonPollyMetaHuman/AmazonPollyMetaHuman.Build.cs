@@ -36,6 +36,10 @@ public class AmazonPollyMetaHuman : ModuleRules
         "aws-c-s3",
         "aws-checksums",
         "aws-cpp-sdk-core",
+        "aws-cpp-sdk-lex",
+        "aws-cpp-sdk-lex-models",
+        "aws-cpp-sdk-lexv2-models",
+        "aws-cpp-sdk-lexv2-runtime",
         "aws-cpp-sdk-polly",
         "aws-crt-cpp"
     };

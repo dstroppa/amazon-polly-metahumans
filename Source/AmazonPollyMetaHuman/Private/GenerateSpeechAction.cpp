@@ -35,7 +35,8 @@ FGenerateSpeechAction::FGenerateSpeechAction(
     this->GenerateSpeechExecPins = EGenerateSpeechExecPins::Failure;
     AsyncTask(ENamedThreads::AnyHiPriThreadNormalTask, [this, Text, VoiceId] ()
     {
-        this->SpeechComponent->GenerateSpeechSync(Text, VoiceId);
+        this->SpeechComponent->GenerateTextResponseSync(Text);
+        this->SpeechComponent->GenerateSpeechSync(VoiceId);
         AsyncTask(ENamedThreads::GameThread, [this] ()
         {
             this->GenerateSpeechExecPins = EGenerateSpeechExecPins::Success;

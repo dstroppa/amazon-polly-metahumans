@@ -211,7 +211,8 @@ void::AmazonPollySpec::Define() {
                 // given an empty text passed into GenerateSpeechSync
                 AddExpectedError(TEXT("Cannot generate speech"), EAutomationExpectedErrorFlags::Contains);
                 // when GenerateSpeechSync is invoked with the empty text
-                TestableSpeechComponent->GenerateSpeechSync("", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 HasMetExpectedErrors();
                 // then an error should be logged and the Audiobuffer and VisemeEventArray should be empty 
                 TestTrue("Audiobuffer is empty after call", TestableSpeechComponent->GetAudiobuffer().Num() == 0);
@@ -223,7 +224,8 @@ void::AmazonPollySpec::Define() {
                 // given a bool value of true for bIsSpeaking (StartSpeech invoked)
                 TestableSpeechComponent->SetSpeaking(true);
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 HasMetExpectedErrors();
                 // then an error should be logged and the Audiobuffer and VisemeEventArray should be empty 
                 TestTrue("Audiobuffer is empty after call", TestableSpeechComponent->GetAudiobuffer().Num() == 0);
@@ -238,7 +240,8 @@ void::AmazonPollySpec::Define() {
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollyErrorOutcome());
                 AddExpectedError(TEXT("Polly failed to generate audio file. Error: error"), EAutomationExpectedErrorFlags::Contains);
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync(TEXT("sampletext"), EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then an error should be logged 
                 HasMetExpectedErrors();
             });
@@ -251,7 +254,8 @@ void::AmazonPollySpec::Define() {
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollyErrorOutcome());
                 AddExpectedError(TEXT("Polly failed to generate visemes. Error: error"), EAutomationExpectedErrorFlags::Contains);
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync(TEXT("sampletext"), EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then an error should be logged 
                 HasMetExpectedErrors();
             });
@@ -264,7 +268,8 @@ void::AmazonPollySpec::Define() {
                 // a Buffer generated from a proper stream of visemes 
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"p\"}"));
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then VisemeEventArray should be populated with 1 viseme and timestamp from the stream 
                 TestEqual("VisemeEventArray is populated after call", TestableSpeechComponent->GetVisemeEventArray().Num(), 1);
                 TestEqual("viseme1", TestableSpeechComponent->GetVisemeEventArray()[0].Viseme, EViseme::P);
@@ -280,7 +285,8 @@ void::AmazonPollySpec::Define() {
                 // a Buffer generated from a proper stream of visemes 
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"k\"}\n{\"time\":237,\"type\":\"viseme\",\"value\":\"a\"}\n{\"time\":562,\"type\":\"viseme\",\"value\":\"sil\"}\n{\"time\":1330,\"type\":\"viseme\",\"value\":\"p\"}\n{\"time\":1442,\"type\":\"viseme\",\"value\":\"a\"}\n{\"time\":1505,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1642,\"type\":\"viseme\",\"value\":\"e\"}\n{\"time\":1692,\"type\":\"viseme\",\"value\":\"p\"}\n{\"time\":1755,\"type\":\"viseme\",\"value\":\"i\"}\n{\"time\":1817,\"type\":\"viseme\",\"value\":\"s\"}\n{\"time\":1905,\"type\":\"viseme\",\"value\":\"S\"}\n{\"time\":2030,\"type\":\"viseme\",\"value\":\"o\"}\n{\"time\":2192,\"type\":\"viseme\",\"value\":\"a\"}\n{\"time\":2230,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":2330,\"type\":\"viseme\",\"value\":\"@\"}\n{\"time\":2542,\"type\":\"viseme\",\"value\":\"sil\"}"));
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then VisemeEventArray should be populated with 16 visemes and timestamps from the stream 
                 TestEqual("VisemeEventArray is populated after call", TestableSpeechComponent->GetVisemeEventArray().Num(), 16);
                 TestEqual("viseme1", TestableSpeechComponent->GetVisemeEventArray()[0].Viseme, EViseme::K);
@@ -326,7 +332,8 @@ void::AmazonPollySpec::Define() {
                 // Buffer generated from a proper stream of visemes generated from special characters 
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":62,\"type\":\"viseme\",\"value\":\"p\"}\n{\"time\":187,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":237,\"type\":\"viseme\",\"value\":\"s\"}\n{\"time\":300,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":375,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":450,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":562,\"type\":\"viseme\",\"value\":\"k\"}\n{\"time\":625,\"type\":\"viseme\",\"value\":\"a\"}\n{\"time\":712,\"type\":\"viseme\",\"value\":\"r\"}\n{\"time\":750,\"type\":\"viseme\",\"value\":\"@\"}\n{\"time\":937,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1037,\"type\":\"viseme\",\"value\":\"@\"}\n{\"time\":1062,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1125,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1200,\"type\":\"viseme\",\"value\":\"u\"}\n{\"time\":1250,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":1312,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1487,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1562,\"type\":\"viseme\",\"value\":\"u\"}\n{\"time\":1587,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":1625,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1700,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1750,\"type\":\"viseme\",\"value\":\"i\"}\n{\"time\":1875,\"type\":\"viseme\",\"value\":\"T\"}\n{\"time\":1937,\"type\":\"viseme\",\"value\":\"r\"}\n{\"time\":2087,\"type\":\"viseme\",\"value\":\"i\"}\n{\"time\":2275,\"type\":\"viseme\",\"value\":\"sil\"}"));
                 // when GenerateSpeechSync is invoked 
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then VisemeEventArray should be populated with 27 visemes and timestamps from the stream 
                 TestEqual("VisemeEventArray is populated after call", TestableSpeechComponent->GetVisemeEventArray().Num(), 27);
                 TestEqual("viseme1", TestableSpeechComponent->GetVisemeEventArray()[0].Viseme, EViseme::P);
@@ -393,7 +400,8 @@ void::AmazonPollySpec::Define() {
                 // containing a Buffer generated from a stream with all possible visemes
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"p\"}\n{\"time\":200,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":237,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":450,\"type\":\"viseme\",\"value\":\"i\"}\n{\"time\":500,\"type\":\"viseme\",\"value\":\"k\"}\n{\"time\":625,\"type\":\"viseme\",\"value\":\"S\"}\n{\"time\":875,\"type\":\"viseme\",\"value\":\"T\"}\n{\"time\":1062,\"type\":\"viseme\",\"value\":\"f\"}\n{\"time\":1200,\"type\":\"viseme\",\"value\":\"a\"}\n{\"time\":1487,\"type\":\"viseme\",\"value\":\"e\"}\n{\"time\":1875,\"type\":\"viseme\",\"value\":\"s\"}\n{\"time\":1962,\"type\":\"viseme\",\"value\":\"r\"}\n{\"time\":2787,\"type\":\"viseme\",\"value\":\"u\"}\n{\"time\":3312,\"type\":\"viseme\",\"value\":\"@\"}\n{\"time\":4625,\"type\":\"viseme\",\"value\":\"o\"}\n{\"time\":4937,\"type\":\"viseme\",\"value\":\"O\"}\n{\"time\":5212,\"type\":\"viseme\",\"value\":\"sil\"}"));
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then VisemeEventArray should be populated with 17 visemes and contain all possible visemes 
                 TestEqual("VisemeEventArray is populated after call", TestableSpeechComponent->GetVisemeEventArray().Num(), 17);
                 TestEqual("p", TestableSpeechComponent->GetVisemeEventArray()[0].Viseme, EViseme::P);
@@ -426,11 +434,13 @@ void::AmazonPollySpec::Define() {
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("@#ABCDE12345"));
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":62,\"type\":\"viseme\",\"value\":\"p\"}\n{\"time\":187,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":237,\"type\":\"viseme\",\"value\":\"s\"}\n{\"time\":300,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":375,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":450,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":562,\"type\":\"viseme\",\"value\":\"k\"}\n{\"time\":625,\"type\":\"viseme\",\"value\":\"a\"}\n{\"time\":712,\"type\":\"viseme\",\"value\":\"r\"}\n{\"time\":750,\"type\":\"viseme\",\"value\":\"@\"}\n{\"time\":937,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1037,\"type\":\"viseme\",\"value\":\"@\"}\n{\"time\":1062,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1125,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1200,\"type\":\"viseme\",\"value\":\"u\"}\n{\"time\":1250,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":1312,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1487,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1562,\"type\":\"viseme\",\"value\":\"u\"}\n{\"time\":1587,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":1625,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1700,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":1750,\"type\":\"viseme\",\"value\":\"i\"}\n{\"time\":1875,\"type\":\"viseme\",\"value\":\"T\"}\n{\"time\":1937,\"type\":\"viseme\",\"value\":\"r\"}\n{\"time\":2087,\"type\":\"viseme\",\"value\":\"i\"}\n{\"time\":2275,\"type\":\"viseme\",\"value\":\"sil\"}"));
                 // when GenerateSpeechSync is invoked for the first time
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then VisemeEventArray should be filled with 16 visemes from the first PollyVisemeOutcome object 
                 TestTrue("VisemeEventArray is filled after call", TestableSpeechComponent->GetVisemeEventArray().Num() == 16);
                 // when GenerateSpeechSync is invoked for the second time
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then VisemeEventArray should only contain the 27 visemes from the second PollyVisemeOutcome object
                 TestTrue("VisemeEventArray empties previous data and fills with new data after second call", TestableSpeechComponent->GetVisemeEventArray().Num() == 27);
                 TestTrue("All lambdas invoked during GenerateSpeechSync", MockPollyClient->SynthesizeSpeechBehaviors.IsEmpty());
@@ -445,7 +455,8 @@ void::AmazonPollySpec::Define() {
                 // an improper stream that does not contain a JSON 
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("NOT A JSON"));
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then an error should be logged and VisemeEventArray and Audiobuffer should be empty 
                 TestTrue("VisemeEventArray is empty after call", TestableSpeechComponent->GetVisemeEventArray().Num() == 0);
                 TestTrue("Audiobuffer is empty after call", TestableSpeechComponent->GetAudiobuffer().Num() == 0);
@@ -462,7 +473,8 @@ void::AmazonPollySpec::Define() {
                 // an improper stream that contains an improperly formatted JSON
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"random\":125,\"field\":\"hi\",\"mom\":\"k\"}"));
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then an error should be logged and VisemeEventArray and Audiobuffer should be empty 
                 TestTrue("VisemeEventArray is empty after call", TestableSpeechComponent->GetVisemeEventArray().Num() == 0);
                 TestTrue("Audiobuffer is empty after call", TestableSpeechComponent->GetAudiobuffer().Num() == 0);
@@ -480,7 +492,8 @@ void::AmazonPollySpec::Define() {
                 // an invalid viseme value 
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"J\"}"));
                 // when GenerateSpeechSync is invoked 
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 // then an error should be logged and the returned viseme should be the default viseme Sil 
                 TestEqual("Sil returned when an invalid viseme is read", TestableSpeechComponent->GetVisemeEventArray()[0].Viseme, EViseme::Sil);
                 TestTrue("All lambdas invoked during GenerateSpeechSync", MockPollyClient->SynthesizeSpeechBehaviors.IsEmpty());
@@ -495,7 +508,8 @@ void::AmazonPollySpec::Define() {
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("Hi! My name is Chandler!"));
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"p\"}"));
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("Hi! My name is Chandler!", EVoiceId::Joey);
+                TestableSpeechComponent->SetResponseText("Hi! My name is Chandler!");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joey);
                 // then the Audiobuffer should be filled with the Buffer data
                 TestTrue("StringStream is a multiple of 4", (TestableSpeechComponent->GetAudiobuffer().Num() % 4) == 0);
                 TestTrue("AudioBuffer is filled after call", TestableSpeechComponent->GetAudiobuffer().Num() > 0);
@@ -518,7 +532,8 @@ void::AmazonPollySpec::Define() {
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("@#ABCDE12345"));
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"p\"}"));
                 // when GenerateSpeechSync is invoked
-                TestableSpeechComponent->GenerateSpeechSync("@#ABCDE12345", EVoiceId::Kimberly);
+                TestableSpeechComponent->SetResponseText("@#ABCDE12345");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Kimberly);
                 // then the Audiobuffer should be filled with the Buffer data
                 TestTrue("StringStream is a multiple of 4", (TestableSpeechComponent->GetAudiobuffer().Num() % 4) == 0);
                 TestTrue("AudioBuffer is filled after call", TestableSpeechComponent->GetAudiobuffer().Num() > 0);
@@ -544,12 +559,14 @@ void::AmazonPollySpec::Define() {
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("Hi! My name is Chandler!"));
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"p\"}"));
                 // when GenerateSpeechSync is invoked for the first time
-                TestableSpeechComponent->GenerateSpeechSync("Hi! My name is Chandler!", EVoiceId::Joey);
+                TestableSpeechComponent->SetResponseText("Hi! My name is Chandler!");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joey);
                 // then the Audiobuffer should be filled with the buffer data from
                 // the first PollyOutcome object 
                 TestTrue("AudioBuffer size is 24, the size of the first audio stream", TestableSpeechComponent->GetAudiobuffer().Num() == 24);
                 // when GenerateSpeechSync is invoked for the second time
-                TestableSpeechComponent->GenerateSpeechSync("Hi! My name is Chandler!", EVoiceId::Joey);
+                TestableSpeechComponent->SetResponseText("Hi! My name is Chandler!");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joey);
                 // then the Audiobuffer data from the first call to GenerateSpeechSync should be replaced 
                 // by the Audiobuffer data from the second call to GenerateSpech 
                 TestTrue("AudioBuffer size is 24, the size of the second audio stream, and does not contain a duplicate of the audio stream data from the first call", TestableSpeechComponent->GetAudiobuffer().Num() == 24);
@@ -572,7 +589,8 @@ void::AmazonPollySpec::Define() {
                 // a Buffer containing data from a valid viseme stream 
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"p\"}\n{\"time\":200,\"type\":\"viseme\",\"value\":\"E\"}\n{\"time\":237,\"type\":\"viseme\",\"value\":\"t\"}\n{\"time\":450,\"type\":\"viseme\",\"value\":\"i\"}\n{\"time\":500,\"type\":\"viseme\",\"value\":\"k\"}"));
                 // given a call to GenerateSpeechSync 
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joanna);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joanna);
                 TestTrue("All lambdas invoked during GenerateSpeechSync", MockPollyClient->SynthesizeSpeechBehaviors.IsEmpty());
                 // when StartSpeech is invoked
                 USoundWaveProcedural* PollyAudio = TestableSpeechComponent->StartSpeech();
@@ -624,7 +642,8 @@ void::AmazonPollySpec::Define() {
                 // a Buffer containing data from a valid viseme stream with a single viseme
                 MockPollyClient->AddSynthesizeSpeechBehavior(CreatePollySuccessfulOutcome("{\"time\":125,\"type\":\"viseme\",\"value\":\"p\"}"));
                 // given a call to GenerateSpeechSync 
-                TestableSpeechComponent->GenerateSpeechSync("sampletext", EVoiceId::Joey);
+                TestableSpeechComponent->SetResponseText("sampletext");
+                TestableSpeechComponent->GenerateSpeechSync(EVoiceId::Joey);
                 TestTrue("All lambdas invoked during GenerateSpeechSync", MockPollyClient->SynthesizeSpeechBehaviors.IsEmpty());
                 // when StartSpeech is invoked
                 USoundWaveProcedural* PollyAudio = TestableSpeechComponent->StartSpeech();

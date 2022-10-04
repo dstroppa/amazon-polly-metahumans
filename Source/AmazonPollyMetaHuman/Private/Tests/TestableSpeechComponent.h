@@ -39,7 +39,7 @@ public:
     * Overrides GenerateSpeechSync to change accessibility to public so it can be invoked
     * from the spec tests. See USpeechComponent::GenerateSpeechSync for details.
     */
-    virtual void GenerateSpeechSync(const FString text, const EVoiceId VoiceId) override;
+    virtual void GenerateSpeechSync(const EVoiceId VoiceId) override;
     /**
     * Overrides PlayNextViseme to change accessibility to public so it can be invoked
     * from the spec tests. See USpeechComponent::GenerateSpeechSync for details.
@@ -81,4 +81,8 @@ public:
     * Setter for bIsSpeaking
     */
     void SetSpeaking(bool boolean);
+    /**
+    * Setter for ResponseText
+    */
+    void SetResponseText(FString response);
 };
