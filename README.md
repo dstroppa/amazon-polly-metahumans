@@ -1,14 +1,11 @@
-# Amazon Polly & MetaHumans Sample Project
+# MetaHumans Customer Service
 
-*A sample project combining Epic Games' MetaHuman digital characters with Amazon Polly text-to-speech.*
+*A sample project combining Epic Games' MetaHuman digital characters with Amazon ML voice services.*
 
-This Unreal Engine sample project demonstrates how to bring Epic Games' [MetaHuman digital characters](https://www.unrealengine.com/en-US/digital-humans) to life using the Amazon Polly text-to-speech service from AWS. Use this project as a starting point for creating your own Unreal Engine applications that leverage Amazon Polly to give voice to your MetaHumans using one of 16 different English language voices spanning 5 dialects. Or extend this project to use any of Polly's 60+ voices covering 20+ languages and 13+ dialects.
+This Unreal Engine sample project demonstrates how to bring Epic Games' [MetaHuman digital characters](https://www.unrealengine.com/en-US/digital-humans) to life using the Amazon Polly text-to-speech and Amazon Lex NLP services from AWS. Use this project as a starting point for creating your own Unreal Engine applications that leverage Amazon Polly to give voice to your MetaHumans using one of 16 different English language voices spanning 5 dialects. Or extend this project to use any of Polly's 60+ voices covering 20+ languages and 13+ dialects.
 
 
 https://user-images.githubusercontent.com/52681180/144937529-6b967a38-6b25-44ee-b419-b7bd4c1fa42c.mov
-
-
-With Amazon Polly, you only pay for what you use. You are charged based on the number of characters of text that you convert either to speech audio or to speech metadata. In addition, you can cache and replay Amazon Polly’s generated speech at no additional cost. For full pricing details, see [Amazon Polly Pricing](https://aws.amazon.com/polly/pricing/).
 
 **Contents**
 
@@ -33,7 +30,7 @@ With Amazon Polly, you only pay for what you use. You are charged based on the n
 
 In order for this Unreal Engine project to interact with the Amazon Polly service, you must provide it with AWS credentials that allow access to that service. The easiest way to generate these credentials is to create a new AWS Identity Access & Management (IAM) user in your AWS account. 
 
-Create a new IAM user and assign to it the permissions policy named *"AmazonPollyReadOnlyAccess"*. Although the name you give this user is not important, we suggest naming it "MetaHumans Sample" or something equally distinctive. Be sure to save the **Access Key ID** and the **Secret Access Key** that are generated during the user creation process. You'll need them later.
+Create a new IAM user and assign to it the permissions policies named *"AmazonPollyReadOnlyAccess"* and *"AmazonLexRunBotsOnly "*. Although the name you give this user is not important, we suggest naming it "MetaHumans Sample" or something equally distinctive. Be sure to save the **Access Key ID** and the **Secret Access Key** that are generated during the user creation process. You'll need them later.
 
 > 💡 **Tip:** For more help, see ["Creating an IAM user in your AWS account"](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) in the AWS IAM documentation.
 
@@ -51,11 +48,11 @@ Use the `aws configure` command to create a default profile for the AWS CLI. Be 
 
 
 
-### 3. Compile the Polly C++ SDK
+### 3. Compile the Polly and Lex C++ SDK
 
 > 🛑 This next step requires cmake and git. If you don't already have cmake installed, you can [download it here](https://cmake.org/download/). After you download cmake, launch cmake and click 'Tools' -> 'How To Install For Command Line Use' and follow one of the instructions. E.g. for Mac - One may add CMake to the PATH: PATH="/Applications/CMake.app/Contents/bin":"$PATH"
 
-This project makes use of the C++ Polly API – a part of the AWS SDK for C++ – to communicate with the Polly service. We've provided scripts to automatically download and compile the appropriate binaries for you. Run one of the following scripts:
+This project makes use of the C++ Polly API and Lex API – a part of the AWS SDK for C++ – to communicate with the respective service. We've provided scripts to automatically download and compile the appropriate binaries for you. Run one of the following scripts:
 
 **Windows:** [Source/AmazonPollyMetaHuman/ThirdParty/AwsSdk/BuildAwsSdkWin64.bat](Source/AmazonPollyMetaHuman/ThirdParty/AwsSdk/BuildAwsSdkWin64.bat)
 
