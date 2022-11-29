@@ -135,8 +135,8 @@ bool USpeechComponent::GenerateResponse(const FString& Text) {
 
 Aws::LexRuntimeV2::Model::RecognizeTextRequest USpeechComponent::CreateLexTextRequest(const FString& Text) const {
     Aws::LexRuntimeV2::Model::RecognizeTextRequest LexRequest;
-    LexRequest.SetBotAliasId("605I57O4BQ");
-    LexRequest.SetBotId("CGV9V45HLE");
+    LexRequest.SetBotAliasId("KFRD6TBXJC");
+    LexRequest.SetBotId("IT6C2DASJZ");
     LexRequest.SetLocaleId("en_US");
     LexRequest.SetSessionId("mhcs0000-aaaa-1111");
     LexRequest.SetText(FStringToAwsString(Text));
