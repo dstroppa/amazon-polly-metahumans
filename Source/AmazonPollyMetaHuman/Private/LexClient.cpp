@@ -33,7 +33,12 @@ LexOutcome LexClient::RecognizeText(const Aws::LexRuntimeV2::Model::RecognizeTex
     LexOutcome Outcome;
     Aws::LexRuntimeV2::Model::RecognizeTextOutcome TextOutcome = AwsLexClient->RecognizeText(TextRequest);
     if (TextOutcome.IsSuccess()) {
-        Outcome.LexOutputMsg = TextOutcome.GetResult().GetMessages()[0].GetContent();
+        if ((std::size(TextOutcome.GetResult().GetMessages()) == 0) || (TextOutcome.GetResult().GetMessages()[0].GetContent() == "")) {
+            Outcome.LexOutputMsg = "Hello, welcome to the AWS Retail Demo Store Customer Service. I'm Ettore, and I'm here to help you. What can I do for you today?";
+        }
+        else {
+            Outcome.LexOutputMsg = TextOutcome.GetResult().GetMessages()[0].GetContent();
+        }
         Outcome.IsSuccess = true;
     }
     else {
