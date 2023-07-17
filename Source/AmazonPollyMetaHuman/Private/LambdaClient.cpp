@@ -25,6 +25,7 @@ LambdaOutcome LambdaClient::Invoke(const Aws::Lambda::Model::InvokeRequest& Invo
     if (outcome.IsSuccess()) {
         invokeResult = std::move(outcome.GetResult());
 
+
         auto json_response = Aws::Utils::Json::JsonValue(invokeResult.GetResult().GetPayload());
         if (!json_response.WasParseSuccessful()) {
             // handle error, maybe set Outcome.IsSuccess = false and return

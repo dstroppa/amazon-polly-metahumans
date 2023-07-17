@@ -21,6 +21,7 @@ struct LambdaOutcome {
 */
 class LambdaClient {
 
+
 private:
     /**
     * LambdaClient used to invoke the Lambda API (Invoke)

@@ -26,6 +26,7 @@
 #include <aws/core/client/AWSClient.h>
 #include "UnrealAWSUtils.h"
 #include "GenerateSpeechAction.h"
+#include <regex>
 
 using UnrealAWSUtils::AwsStringToFString;
 using UnrealAWSUtils::FStringToAwsString;
@@ -135,7 +136,7 @@ bool USpeechComponent::GenerateResponse(const FString& Text) {
 }
 
 bool USpeechComponent::GenerateLambdaResponse(const FString& Text) {
-    LambdaOutcome lambdaOutcome = MyLambdaClient->Invoke(CreateLambdaInvokeRequest("createResponseforAda",Text));
+    LambdaOutcome lambdaOutcome = MyLambdaClient->Invoke(CreateLambdaInvokeRequest("KendraIntegration",Text));
 
     if (lambdaOutcome.IsSuccess) {
         ResponseText = AwsStringToFString(lambdaOutcome.LambdaOutputMsg);
@@ -161,13 +162,16 @@ Aws::LexRuntimeV2::Model::RecognizeTextRequest USpeechComponent::CreateLexTextRe
     LexRequest.SetText(FStringToAwsString(Text));
     return LexRequest;
 }
+
 Aws::Lambda::Model::InvokeRequest USpeechComponent::CreateLambdaInvokeRequest(const FString& functionName, const FString& payload) const {
     Aws::Lambda::Model::InvokeRequest invokeRequest;
-    invokeRequest.SetFunctionName("createResponseforAda");
+    invokeRequest.SetFunctionName("KendraIntegration");
     invokeRequest.SetContentType("application/json");
 
-    FString quotedPayload = FString::Printf(TEXT("{\"text_inputs\":\"%s\"}"), *payload);
+    FString sanitizedPayload = payload.Replace(TEXT("\n"), TEXT("\\n")).Replace(TEXT("\r"), TEXT("\\r"));
+    FString quotedPayload = FString::Printf(TEXT("{\"text_inputs\":\"%s\"}"), *sanitizedPayload);
     Aws::String jsonPayload = TCHAR_TO_UTF8(*quotedPayload);
+
 
     invokeRequest.SetBody(std::make_shared<Aws::StringStream>(jsonPayload));
 
