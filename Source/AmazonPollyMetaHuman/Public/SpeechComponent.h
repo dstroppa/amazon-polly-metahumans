@@ -29,6 +29,8 @@
 #include "Runtime/Engine/Public/LatentActions.h"
 #include "Viseme.h"
 #include "VoiceId.h"
+#include "MetahumanActor.h"
+
 #include "SpeechComponent.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPollyMsg, Log, All);
@@ -42,6 +44,7 @@ enum class EGenerateSpeechExecPins : uint8 {
     Success UMETA(DisplayName = "Success"),
     Failure UMETA(DisplayName = "Failure")
 };
+class AMetahumanActor;
 
 /**
 * Struct containing a single viseme and its corresponding timestamp returned by Polly
@@ -93,6 +96,8 @@ public:
             struct FLatentActionInfo LatentInfo,
             EGenerateSpeechExecPins& EGenerateSpeechExecPins
         );
+    UPROPERTY(EditAnywhere)
+        AMetahumanActor* AMetahumanActorReference;
     /**
     * Starts the Animation playback and returns an Audio object to be played in Blueprints.
     * GenerateSpeech function must be called beforehand.
@@ -174,6 +179,7 @@ protected:
     TUniquePtr <LambdaClient> MyLambdaClient;
 
 private:
+    
     /**
     * Calls the LexClient to generate Lex response text
     * @param text - th question asked

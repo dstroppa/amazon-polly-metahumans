@@ -45,6 +45,8 @@ void USpeechComponent::InitializeComponent() {
     InitializePollyClient();
     InitializeLexClient();
     InitializeLambdaClient();
+    AMetahumanActorReference = Cast<AMetahumanActor>(GetOwner());
+
 }
 
 void USpeechComponent::GenerateSpeech(
@@ -136,10 +138,37 @@ bool USpeechComponent::GenerateResponse(const FString& Text) {
 }
 
 bool USpeechComponent::GenerateLambdaResponse(const FString& Text) {
-    LambdaOutcome lambdaOutcome = MyLambdaClient->Invoke(CreateLambdaInvokeRequest("KendraIntegration",Text));
+    // Get the start time
+    double startTime = FPlatformTime::Seconds();
+
+    LambdaOutcome lambdaOutcome = MyLambdaClient->Invoke(CreateLambdaInvokeRequest("KendraInteg", Text));
+
+    // Get the time after the Lambda call
+    double endTime = FPlatformTime::Seconds();
+    double lambdaCallTime = endTime - startTime;
+    UE_LOG(LogPollyMsg, Display, TEXT("Time taken for Lambda call: %f seconds"), lambdaCallTime);
 
     if (lambdaOutcome.IsSuccess) {
+        startTime = FPlatformTime::Seconds();  // Reset the start time
+
         ResponseText = AwsStringToFString(lambdaOutcome.LambdaOutputMsg);
+
+        UE_LOG(LogPollyMsg, Display, TEXT("Checking AMetahumanActorReference..."));
+
+        if (AMetahumanActorReference)
+        {
+            UE_LOG(LogPollyMsg, Display, TEXT("Im inside"));
+
+            AMetahumanActorReference->UpdateSubtitle(ResponseText);
+        }
+
+        endTime = FPlatformTime::Seconds();  // Get the end time
+        double responseProcessingTime = endTime - startTime;
+        UE_LOG(LogPollyMsg, Display, TEXT("Time taken to process Lambda response: %f seconds"), responseProcessingTime);
+
+        // Log the size of the response
+        UE_LOG(LogPollyMsg, Display, TEXT("Response size: %d characters"), ResponseText.Len());
+
         UE_LOG(LogPollyMsg, Display, TEXT("Lambda response text: %s"), *ResponseText);
 
         // Process the Lambda response text
@@ -151,6 +180,8 @@ bool USpeechComponent::GenerateLambdaResponse(const FString& Text) {
         return false;  // Lambda call failed
     }
 }
+
+
 
 
 Aws::LexRuntimeV2::Model::RecognizeTextRequest USpeechComponent::CreateLexTextRequest(const FString& Text) const {
@@ -167,6 +198,8 @@ Aws::Lambda::Model::InvokeRequest USpeechComponent::CreateLambdaInvokeRequest(co
     Aws::Lambda::Model::InvokeRequest invokeRequest;
     invokeRequest.SetFunctionName("KendraIntegration");
     invokeRequest.SetContentType("application/json");
+    invokeRequest.SetInvocationType(Aws::Lambda::Model::InvocationType::RequestResponse); // Example: synchronous invocation
+
 
     FString sanitizedPayload = payload.Replace(TEXT("\n"), TEXT("\\n")).Replace(TEXT("\r"), TEXT("\\r"));
     FString quotedPayload = FString::Printf(TEXT("{\"text_inputs\":\"%s\"}"), *sanitizedPayload);

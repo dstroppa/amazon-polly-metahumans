@@ -9,7 +9,8 @@ LambdaClient::LambdaClient() {
 
     Aws::Client::ClientConfiguration configuration;
     configuration.userAgent = "request-source/AmazonPollyMetaHuman";
-
+    configuration.connectTimeoutMs = 30000; // 30 seconds connection timeout
+    configuration.requestTimeoutMs = 20000;
     AwsLambdaClient = MakeUnique<Aws::Lambda::LambdaClient>(configuration);
 
 }
