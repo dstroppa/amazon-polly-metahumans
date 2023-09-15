@@ -26,6 +26,7 @@
 #include <aws/core/client/AWSClient.h>
 #include "UnrealAWSUtils.h"
 #include "GenerateSpeechAction.h"
+#include <regex>
 
 using UnrealAWSUtils::AwsStringToFString;
 using UnrealAWSUtils::FStringToAwsString;
@@ -43,6 +44,9 @@ void USpeechComponent::InitializeComponent() {
     Super::InitializeComponent();
     InitializePollyClient();
     InitializeLexClient();
+    InitializeLambdaClient();
+    AMetahumanActorReference = Cast<AMetahumanActor>(GetOwner());
+
 }
 
 void USpeechComponent::GenerateSpeech(
@@ -116,8 +120,8 @@ void USpeechComponent::GenerateTextResponseSync(const FString Text) {
         UE_LOG(LogPollyMsg, Error, TEXT("Cannot generate speech during playback."));
         return;
     }
-    if (GenerateResponse(Text)) {
-        UE_LOG(LogPollyMsg, Display, TEXT("Lex called successfully!"));
+    if (GenerateLambdaResponse(Text)) {
+        UE_LOG(LogPollyMsg, Display, TEXT("Lambda called successfully!"));
     }
 }
 
@@ -125,7 +129,7 @@ bool USpeechComponent::GenerateResponse(const FString& Text) {
     LexOutcome LexTextOutcome = MyLexClient->RecognizeText(CreateLexTextRequest(Text));
     if (LexTextOutcome.IsSuccess) {
         FScopeLock lock(&Mutex);
-        ResponseText = AwsStringToFString(LexTextOutcome.LexOutputMsg);
+        //ResponseText1 = AwsStringToFString(LexTextOutcome.LexOutputMsg);
     }
     else {
         UE_LOG(LogPollyMsg, Error, TEXT("Lex failed to generate response. Error: %s"), *AwsStringToFString(LexTextOutcome.LexErrorMsg));
@@ -133,15 +137,83 @@ bool USpeechComponent::GenerateResponse(const FString& Text) {
     return LexTextOutcome.IsSuccess;
 }
 
+bool USpeechComponent::GenerateLambdaResponse(const FString& Text) {
+    // Get the start time
+    double startTime = FPlatformTime::Seconds();
+
+    LambdaOutcome lambdaOutcome = MyLambdaClient->Invoke(CreateLambdaInvokeRequest("KendraInteg", Text));
+
+    // Get the time after the Lambda call
+    double endTime = FPlatformTime::Seconds();
+    double lambdaCallTime = endTime - startTime;
+    UE_LOG(LogPollyMsg, Display, TEXT("Time taken for Lambda call: %f seconds"), lambdaCallTime);
+
+    if (lambdaOutcome.IsSuccess) {
+        startTime = FPlatformTime::Seconds();  // Reset the start time
+
+        ResponseText = AwsStringToFString(lambdaOutcome.LambdaOutputMsg);
+
+        UE_LOG(LogPollyMsg, Display, TEXT("Checking AMetahumanActorReference..."));
+
+        if (AMetahumanActorReference)
+        {
+            UE_LOG(LogPollyMsg, Display, TEXT("Im inside"));
+
+            AMetahumanActorReference->UpdateSubtitle(ResponseText);
+        }
+
+        endTime = FPlatformTime::Seconds();  // Get the end time
+        double responseProcessingTime = endTime - startTime;
+        UE_LOG(LogPollyMsg, Display, TEXT("Time taken to process Lambda response: %f seconds"), responseProcessingTime);
+
+        // Log the size of the response
+        UE_LOG(LogPollyMsg, Display, TEXT("Response size: %d characters"), ResponseText.Len());
+
+        UE_LOG(LogPollyMsg, Display, TEXT("Lambda response text: %s"), *ResponseText);
+
+        // Process the Lambda response text
+        // ...
+        return true;  // Lambda call successful
+    }
+    else {
+        UE_LOG(LogPollyMsg, Error, TEXT("Lambda failed to generate response. Error: %s"), *AwsStringToFString(lambdaOutcome.LambdaErrorMsg));
+        return false;  // Lambda call failed
+    }
+}
+
+
+
+
 Aws::LexRuntimeV2::Model::RecognizeTextRequest USpeechComponent::CreateLexTextRequest(const FString& Text) const {
     Aws::LexRuntimeV2::Model::RecognizeTextRequest LexRequest;
-    LexRequest.SetBotAliasId("KFRD6TBXJC");
-    LexRequest.SetBotId("IT6C2DASJZ");
+    LexRequest.SetBotAliasId("TSTALIASID");
+    LexRequest.SetBotId("TFXMQL7NSA");
     LexRequest.SetLocaleId("en_US");
-    LexRequest.SetSessionId("mhcs0000-aaaa-1111");
+    LexRequest.SetSessionId("mhcs0000-aaaa-1122");
     LexRequest.SetText(FStringToAwsString(Text));
     return LexRequest;
 }
+
+Aws::Lambda::Model::InvokeRequest USpeechComponent::CreateLambdaInvokeRequest(const FString& functionName, const FString& payload) const {
+    Aws::Lambda::Model::InvokeRequest invokeRequest;
+    invokeRequest.SetFunctionName("KendraIntegration");
+    invokeRequest.SetContentType("application/json");
+    invokeRequest.SetInvocationType(Aws::Lambda::Model::InvocationType::RequestResponse); // Example: synchronous invocation
+
+
+    FString sanitizedPayload = payload.Replace(TEXT("\n"), TEXT("\\n")).Replace(TEXT("\r"), TEXT("\\r"));
+    FString quotedPayload = FString::Printf(TEXT("{\"text_inputs\":\"%s\"}"), *sanitizedPayload);
+    Aws::String jsonPayload = TCHAR_TO_UTF8(*quotedPayload);
+
+
+    invokeRequest.SetBody(std::make_shared<Aws::StringStream>(jsonPayload));
+
+    return invokeRequest;
+}
+
+
+
+
 
 void USpeechComponent::GenerateSpeechSync(const EVoiceId VoiceId) {
     if (ResponseText.IsEmpty()) {
@@ -199,7 +271,7 @@ Aws::Polly::Model::SynthesizeSpeechRequest USpeechComponent::CreatePollyAudioReq
     PollyRequest.SetText(FStringToAwsString(Text));
     PollyRequest.SetVoiceId(ToPollyVoiceId(VoiceId));
     PollyRequest.SetEngine(ToPollyVoiceEngine(VoiceId));
-    PollyRequest.SetOutputFormat(Aws::Polly::Model::OutputFormat::pcm); 
+    PollyRequest.SetOutputFormat(Aws::Polly::Model::OutputFormat::pcm);
     return PollyRequest;
 }
 
@@ -243,6 +315,12 @@ void USpeechComponent::InitializePollyClient() {
 
 void USpeechComponent::InitializeLexClient() {
     MyLexClient = MakeUnique<LexClient>();
+}
+
+void USpeechComponent::InitializeLambdaClient()
+{
+    // Perform the necessary initialization steps for your Lambda client
+    MyLambdaClient = MakeUnique<LambdaClient>();
 }
 
 void USpeechComponent::SetTimer(float CurrentVisemeDurationSeconds) {

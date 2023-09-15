@@ -13,7 +13,7 @@ SET AWS_SDK_VERSION=1.9.0
 SET VS_INSTALLPATH=
 IF EXIST "%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" (
     FOR /F "tokens=* USEBACKQ" %%F IN (
-        `"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -version 16.0 -property installationPath`
+        `"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -version 16.11 -property installationPath`
     ) DO (
         SET VS_INSTALLPATH=%%F
     )
@@ -50,7 +50,7 @@ MKDIR "%SDK_INSTALL_DIR%"
 
 @REM Build and install the SDK
 PUSHD "%SDK_BUILD_DIR%"
-cmake .. -G "Visual Studio 16 2019" -DBUILD_ONLY="polly;lex;lex-models;lexv2-models;lexv2-runtime" -DCUSTOM_MEMORY_MANAGEMENT=ON -DCMAKE_INSTALL_PREFIX="%SDK_INSTALL_DIR%"
+cmake .. -G "Visual Studio 16 2019" -DBUILD_ONLY="polly;lambda;lex;lex-models;lexv2-models;lexv2-runtime" -DCUSTOM_MEMORY_MANAGEMENT=ON -DCMAKE_INSTALL_PREFIX="%SDK_INSTALL_DIR%"
 IF %ERRORLEVEL% NEQ 0 ( POPD & GOTO FAILED )
 msbuild ALL_BUILD.vcxproj /p:Configuration=Release /p:DebugSymbols=true 
 IF %ERRORLEVEL% NEQ 0 ( POPD & GOTO FAILED )

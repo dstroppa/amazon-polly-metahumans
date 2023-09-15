@@ -24,10 +24,13 @@
 #include <aws/core/Aws.h>
 #include "PollyClient.h"
 #include "LexClient.h"
+#include "LambdaClient.h"
 #include <chrono>
 #include "Runtime/Engine/Public/LatentActions.h"
 #include "Viseme.h"
 #include "VoiceId.h"
+#include "MetahumanActor.h"
+
 #include "SpeechComponent.generated.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPollyMsg, Log, All);
@@ -41,29 +44,30 @@ enum class EGenerateSpeechExecPins : uint8 {
     Success UMETA(DisplayName = "Success"),
     Failure UMETA(DisplayName = "Failure")
 };
+class AMetahumanActor;
 
 /**
 * Struct containing a single viseme and its corresponding timestamp returned by Polly
-* to be used in setting CurrentViseme and CurrentVisemeDurationSeconds states 
+* to be used in setting CurrentViseme and CurrentVisemeDurationSeconds states
 */
 struct VisemeEvent {
     EViseme Viseme;
     int TimeMilliseconds;
 };
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class AMAZONPOLLYMETAHUMAN_API USpeechComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
-   /**
-    * Default constructor.
-    */
+    /**
+     * Default constructor.
+     */
     USpeechComponent();
     /**
-	 * Initializes the component. See UActorComponent::InitializeComponent for details.
-	 */
+     * Initializes the component. See UActorComponent::InitializeComponent for details.
+     */
     virtual void InitializeComponent() override;
     /**
     * Blueprint function for calling Polly API to generate Viseme/Audio data.
@@ -76,46 +80,48 @@ public:
     */
     UFUNCTION(
         BlueprintCallable,
-        Category = "Amazon Polly", 
+        Category = "Amazon Polly",
         Meta = (
             Latent,
             LatentInfo = "LatentInfo",
             HidePin = "WorldContextObject",
             DefaultToSelf = "WorldContextObject",
             ExpandEnumAsExecs = "EGenerateSpeechExecPins"
-        )
+            )
     )
-    void GenerateSpeech(
-        UObject* WorldContextObject,
-        const FString Text,
-        const EVoiceId VoiceId,
-        struct FLatentActionInfo LatentInfo,
-        EGenerateSpeechExecPins& EGenerateSpeechExecPins
-    );
+        void GenerateSpeech(
+            UObject* WorldContextObject,
+            const FString Text,
+            const EVoiceId VoiceId,
+            struct FLatentActionInfo LatentInfo,
+            EGenerateSpeechExecPins& EGenerateSpeechExecPins
+        );
+    UPROPERTY(EditAnywhere)
+        AMetahumanActor* AMetahumanActorReference;
     /**
     * Starts the Animation playback and returns an Audio object to be played in Blueprints.
     * GenerateSpeech function must be called beforehand.
     * @return A USoundWaveProcedural object containing the audio synthesized from Polly
     */
     UFUNCTION(BlueprintCallable, Category = "Amazon Polly")
-    USoundWaveProcedural* StartSpeech();
+        USoundWaveProcedural* StartSpeech();
     /**
     * Returns the current viseme corresponding to the last invocation of StartSpeech. Assuming
     * the sound returned by StartSpeech began playback immediately following its creation, the
     * current viseme returned by this function should be synchronized to the current sound
     * being played.
-    * 
+    *
     * @return the current viseme
     */
     UFUNCTION(BlueprintPure, Category = "Amazon Polly")
-    EViseme GetCurrentViseme();
+        EViseme GetCurrentViseme();
     /**
     * Returns true if the speech component is still playing a viseme sequence
-    * 
+    *
     * @return true if the speech component is still playing a viseme sequence
     */
     UFUNCTION(BlueprintPure, Category = "Amazon Polly")
-    bool IsSpeaking();
+        bool IsSpeaking();
 
 protected:
     /**
@@ -154,7 +160,7 @@ protected:
     */
     TArray<uint8> Audiobuffer;
     /**
-    * PollyClient state for calling Polly SDK 
+    * PollyClient state for calling Polly SDK
     */
     TUniquePtr<PollyClient> MyPollyClient;
     /**
@@ -169,8 +175,11 @@ protected:
     * LexClient state for calling Lex SDK
     */
     TUniquePtr<LexClient> MyLexClient;
+    //LambdaClient state for calling Lambda SDK
+    TUniquePtr <LambdaClient> MyLambdaClient;
 
 private:
+    
     /**
     * Calls the LexClient to generate Lex response text
     * @param text - th question asked
@@ -178,16 +187,22 @@ private:
     */
     bool GenerateResponse(const FString& text);
     /**
-    * Calls the PollyClient to generate Polly Audio data 
+    * Calls the LambdaClient to generate Lambda response text
+    * @param text - th question asked
+    * @return bool - boolean indicating success/failure of Lex call
+    */
+    bool GenerateLambdaResponse(const FString& text);
+    /**
+    * Calls the PollyClient to generate Polly Audio data
     * @param text - the text synthesized by Polly
-    * @param VoiceId - the voice of the synthesized audio 
+    * @param VoiceId - the voice of the synthesized audio
     * @return bool - boolean indicating success/failure of Polly call
     */
     bool SynthesizeAudio(const FString& text, const EVoiceId VoiceId);
     /**
     * Calls the PollyClient to generate Polly Viseme data
     * @param text - the text synthesized by Polly
-    * @param VoiceId - the voice of the synthesized data 
+    * @param VoiceId - the voice of the synthesized data
     * @return bool - boolean indicating success/failure of Polly call
     */
     bool SynthesizeVisemes(const FString& text, const EVoiceId VoiceId);
@@ -198,16 +213,24 @@ private:
     */
     Aws::LexRuntimeV2::Model::RecognizeTextRequest CreateLexTextRequest(const FString& Text) const;
     /**
-    * Returns a PollyRequest that is configured to return pcm audio data with a given text and VoiceId 
+    * Returns an InvokeRequest that is configured to call the specified Lambda function with the provided payload
+    * @param functionName - the name of the Lambda function to invoke
+    * @param payload - JSON-formatted string to provide as input to the Lambda function
+    * @return InvokeRequest - the configured InvokeRequest
+    */
+    Aws::Lambda::Model::InvokeRequest CreateLambdaInvokeRequest(const FString& functionName, const FString& payload) const;
+
+    /**
+    * Returns a PollyRequest that is configured to return pcm audio data with a given text and VoiceId
     * @param text - the text to be synthesized (SetText)
-    * @param VoiceId - the VoiceId for the synthesized audio 
+    * @param VoiceId - the VoiceId for the synthesized audio
     * @return PollyRequest - the configured PollyRequest
     */
     Aws::Polly::Model::SynthesizeSpeechRequest CreatePollyAudioRequest(const FString& text, const EVoiceId VoiceId) const;
     /**
     * Returns a PollyRequest that is configured to return viseme and timestamp data in a json format
     * @param text - the text to be synthesized (SetText)
-    * @param VoiceId - the VoiceId for the synthesized audio 
+    * @param VoiceId - the VoiceId for the synthesized audio
     * @return PollyRequest - the configured PollyRequest
     */
     Aws::Polly::Model::SynthesizeSpeechRequest CreatePollyVisemeRequest(const FString& text, const EVoiceId VoiceId) const;
@@ -218,11 +241,11 @@ private:
     void GenerateVisemeEvents(FString VisemeJson);
     /**
     * Returns a USoundWave object containing the Polly Audio for playback in Blueprints
-    * @return USoundWaveProcedural - Sound wave object containing Polly Audio 
+    * @return USoundWaveProcedural - Sound wave object containing Polly Audio
     */
     USoundWaveProcedural* QueuePollyAudio();
     /**
-    * Timer handle for use in creating/clearing timers 
+    * Timer handle for use in creating/clearing timers
     */
     FTimerHandle CountdownTimerHandle;
     /*
@@ -235,17 +258,21 @@ private:
     */
     virtual void SetTimer(float CurrentVisemeDurationSeconds);
     /*
-    * Clears the timer 
+    * Clears the timer
     */
     virtual void ClearTimer();
     /*
-    * Initializes the UnrealPollyClient  
+    * Initializes the UnrealPollyClient
     */
     virtual void InitializePollyClient();
     /*
     * Initializes the UnrealLexClient
     */
     virtual void InitializeLexClient();
+    /*
+    * Initializes the UnrealLambdaClient
+    */
+    virtual void InitializeLambdaClient();
     /*
     * Mutex for thread-safe mutation of internal state.
     */
