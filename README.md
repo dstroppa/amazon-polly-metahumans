@@ -1,11 +1,9 @@
-# MetaHumans Customer Service
-
-*A sample project combining Epic Games' MetaHuman digital characters with Amazon ML voice services.*
+# AWS Virtual Customer Assistant
 
 This Unreal Engine sample project demonstrates how to bring Epic Games' [MetaHuman digital characters](https://www.unrealengine.com/en-US/digital-humans) to life using the Amazon Polly text-to-speech and Amazon Lex NLP services from AWS. Use this project as a starting point for creating your own Unreal Engine applications that leverage Amazon Polly to give voice to your MetaHumans using one of 16 different English language voices spanning 5 dialects. Or extend this project to use any of Polly's 60+ voices covering 20+ languages and 13+ dialects.
 
 
-https://user-images.githubusercontent.com/52681180/144937529-6b967a38-6b25-44ee-b419-b7bd4c1fa42c.mov
+![AWS Virtual Customer Assistant](Documentation/media/AWSVirtualCustomerAssistant.png)
 
 **Contents**
 
@@ -20,72 +18,40 @@ https://user-images.githubusercontent.com/52681180/144937529-6b967a38-6b25-44ee-
 
 ## Quick Start
 
+### Create UE4 Pixel Streaming Build
 
+This guide only covers steps to use Unreal Engine 4 to export a Pixel Streaming build to deploy onto AWS, and assumes content has already been built.
+1. Review Pixel Streaming Overview documentation on Unreal Engine website, which describes the technology used, the connection process, and how to get started quickly with your first Pixel Streaming project.
+2. Follow the Getting started with Pixel Streaming documentation to enable Pixel Streaming in your project, build your WindowsNoEditor build, and test your Pixel Streaming server locally.
+3. If you are running Unreal Engine 4.26.0 or later you can skip this step. For earlier versions you will need to modify a Windows PowerShell script for Windows Server compatibility:
+    1. Open file: Engine\Source\Programs\PixelStreaming\WebServers\SignallingWebServer \Start_AWS_WithTURN_SignallingServer.ps1
+    2. Look for “$PublicIp = Invoke-WebRequest” line and add an additional parameter “-UseBasicParsing”. An example of this modified line is: $PublicIp = Invoke-WebRequest -Uri "http://169.254.169.254/latest/meta- data/public-ipv4" -UseBasicParsing
+4. Compress the WindowsNoEditor folder into a zip file by right clicking on the folder and creating the zip file. Note the zip should extract the contents into a WindowsNoEditor folder.
 
-> 🛑 Before proceeding you must have Unreal Engine 4.26 or 4.27 installed as well as the Microsoft Visual Studio development tools required for UE4 C++ development (Windows) or the Xcode development tools (Mac). If you need help with these setup steps, refer to the Unreal Engine 4 documentation, especially ["Setting Up Visual Studio for Unreal Engine"](https://docs.unrealengine.com/4.26/en-US/ProductionPipelines/DevelopmentSetup/VisualStudioSetup/). Disclaimer: This was only tested with Visual Studio 2019 with UE4.26, although with slight modifications to the build script it should work with Visual Studio 2022 as well. I couldn't get this to work with UE5.
+### Upload Required Files to S3
 
+There are two files needed for this solution which need to be accessible via a http URL from the account you will be running the Pixel Streamer in. You can get the first one from this repository, the second is the zip file created in the step above.
+- UE4-Pixel-Streamer-Bootstrap.ps1 – This is the PowerShell script executed once the server has been launched to setup the Pixel Streamer.
+    > Important You will need to modify a parameter in this bootstrap file to match your UE4 Pixel Streaming build. Look for ‘$buildExecutable’ near the top of the file and change the file name to match the name of the executable file in the root directory of your build. This is typically the name of the project with ‘.exe’ extension.
+- Zip File – This is the zip file created in step 2, and can be named to identify the build you are using.
 
+Follow the steps below to upload these files:
+1. Clone the GitHub repository or download the bootstrap file. Make sure you modify the bootstrap file as noted above. You will then upload this file along with the build zip file following these steps:
+    - From the AWS Services choose Storage, then S3 to open Amazon S3.
+    - From the Amazon S3 console dashboard, choose Create Bucket.
+    - In Create a Bucket, type a bucket name in Bucket Name. Choose a Region then click Create. The defaults will be acceptable for development and testing, and will limit the access to the bucket to your account. The EC2 instance will inherit access to the bucket. When preparing for production, review all S3 properties such as encryption and tagging.
+    - Once you’ve created the bucket select it from the list to access that bucket. Then select the Upload Button.
+    - Click on the Add Files button and select the files that you want to upload to the S3 Bucket. This would include the pixel streaming build .zip file and bootstrap file.
+    - Once the files have been selected, click Upload button.
+2. Save the path to your files for future reference. You can do this by clicking on each file in the S3 bucket and copying the Object URL link. You can also copy the URL directly to your clipboard by clicking the icon to the left of the path. Your URL should look like the following: https://s3-bucket-name.s3-us-west-2.amazonaws.com/Folder/WindowsNoEditor.zip
 
-### 1. Create AWS credentials for the project
+### Launch the Pixel Streamer stack
 
-In order for this Unreal Engine project to interact with the Amazon Polly service, you must provide it with AWS credentials that allow access to that service. The easiest way to generate these credentials is to create a new AWS Identity Access & Management (IAM) user in your AWS account. 
+[![Launch stack](/Documentation/media/cloudformation-launch-stack.png 'Launch stack')](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=AWSVirtualCustomerService-PixelStreamer&templateURL=https://s3.amazonaws.com/samplecfntemplates/mytemplate.template)
 
-Create a new IAM user and assign to it the permissions policies named *"AmazonPollyReadOnlyAccess"* and *"AmazonLexRunBotsOnly "*. Although the name you give this user is not important, we suggest naming it "MetaHumans Sample" or something equally distinctive. Be sure to save the **Access Key ID** and the **Secret Access Key** that are generated during the user creation process. You'll need them later.
+### Access Pixel Streaming
 
-> 💡 **Tip:** For more help, see ["Creating an IAM user in your AWS account"](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) in the AWS IAM documentation.
-
-
-
-### 2. Install and configure the AWS Command Line Interface
-
-You will need to configure your local computer to communicate with AWS services using the credentials you created above. The easiest way to do this is to install and configure the AWS Command Line Interface (AWS CLI).
-
-Install the AWS CLI to your local computer following [these instructions](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html).
-
-Use the `aws configure` command to create a default profile for the AWS CLI. Be sure to use the **Access Key ID** and **Secret Access Key** values you saved above.
-
-> 💡 **Tip:** For more help, see ["Configuration basics"](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html) in the AWS CLI documentation.
-
-
-
-### 3. Compile the Polly and Lex C++ SDK
-
-> 🛑 This next step requires cmake and git. If you don't already have cmake installed, you can [download it here](https://cmake.org/download/). After you download cmake, launch cmake and click 'Tools' -> 'How To Install For Command Line Use' and follow one of the instructions. E.g. for Mac - One may add CMake to the PATH: PATH="/Applications/CMake.app/Contents/bin":"$PATH"
-
-This project makes use of the C++ Polly API and Lex API – a part of the AWS SDK for C++ – to communicate with the respective service. We've provided scripts to automatically download and compile the appropriate binaries for you. Run one of the following scripts:
-
-**Windows:** [Source/AmazonPollyMetaHuman/ThirdParty/AwsSdk/BuildAwsSdkWin64.bat](Source/AmazonPollyMetaHuman/ThirdParty/AwsSdk/BuildAwsSdkWin64.bat)
-
-**Mac:** [Source/AmazonPollyMetaHuman/ThirdParty/AwsSdk/BuildAwsSdkMac.sh](Source/AmazonPollyMetaHuman/ThirdParty/AwsSdk/BuildAwsSdkMac.sh)
-
-
-
-### 4. Open the Unreal Engine project
-
-Open the project by double-clicking on the *AmazonPollyMetaHuman.uproject* file.
-
-Click "Yes" on the dialog that appears.
-
-<img src="Documentation/media/module-compile-prompt.png" alt="Module compile prompt" style="width: 33em;" />
-
-
-
-### 5. Run the project
-
-To try out the project, simply click the "Play" button in the Unreal Engine editor. The MetaHuman will come alive using speech and lip sync generated by Amazon Polly. After the MetaHuman stops speaking you can enter your own custom speech text into the on-screen text field.
-
-![Play button](Documentation/media/UE4-toolbar-play.png)
-
-
-
-> ⚠️ Wait until the "Compiling Shaders" process completes before running this project for the first time.
->
-> <img src="Documentation/media/compiling-shaders.png" alt="&quot;Compiling Shaders&quot; message" style="width: 30em;" />
-
-
-
-> 🛠 **Troubleshooting:** This project includes extensive error messaging that can help you debug common problems.  If the project doesn't work properly, open the Output Log tab in the Unreal Engine editor and look for error messages.
-
+In the Outputs tab click on WindowsPublicDNS value in a new tab to create a session on your UE4 Pixel Streaming server. You can use either the WindowsPublicIp or URL from the outputs tab to create sessions with the Pixel Streaming server.
 
 
 ## Developer Guide
