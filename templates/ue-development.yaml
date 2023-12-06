@@ -78,8 +78,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref RootInstanceProfile
-      ImageId: 
-        - !Ref LatestWindows2019AmiId
+      ImageId: !Ref LatestWindows2019AmiId
       SecurityGroupIds:
         - !Ref DCVSecurityGroup
       Tags:
