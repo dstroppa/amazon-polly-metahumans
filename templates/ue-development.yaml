@@ -78,8 +78,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref RootInstanceProfile
-      ImageId: 
-        - !Ref LatestWindows2019AmiId
+      ImageId: !Ref LatestWindows2019AmiId
       SecurityGroupIds:
         - !Ref DCVSecurityGroup
       Tags:
@@ -102,7 +101,7 @@ Resources:
               <script>
             - 'cfn-init.exe -v '
             - ' -c initialize '
-            - ' -r WindowsInstance '
+            - ' -r WindowsUEDeveloperInstance '
             - ' --region '
             - !Ref 'AWS::Region'
             - ' -s '
@@ -226,7 +225,7 @@ Resources:
 
   WindowsInstanceWaitCondition:
     Type: 'AWS::CloudFormation::WaitCondition'
-    DependsOn: WindowsInstance
+    DependsOn: WindowsUEDeveloperInstance
     Properties:
       Handle: !Ref InstanceWaitHandle
       Timeout: '5400'
@@ -288,19 +287,19 @@ Resources:
 Outputs:
 
   WindowsInstanceId:
-    Value: !Ref WindowsInstance
+    Value: !Ref WindowsUEDeveloperInstance
     Description: Instance ID for the newly created EC2 instance
 
   WindowsPublicDNS:
     Value: !GetAtt 
-      - WindowsInstance
+      - WindowsUEDeveloperInstance
       - PublicDnsName
     Description: >-
       Web URL for Streaming Server, using DNS Name of the newly created EC2 instance
 
   WindowsPublicIp:
     Value: !GetAtt 
-      - WindowsInstance
+      - WindowsUEDeveloperInstance
       - PublicIp
     Description: Public IP address of the newly created EC2 instance
 
@@ -309,7 +308,7 @@ Outputs:
       - ''
       - - 'https://'
         - !GetAtt 
-          - WindowsInstance
+          - WindowsUEDeveloperInstance
           - PublicIp
         - ':8443'
     Description: >-
