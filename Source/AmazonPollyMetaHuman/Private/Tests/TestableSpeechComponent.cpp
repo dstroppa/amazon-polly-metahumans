@@ -22,8 +22,8 @@ void UTestableSpeechComponent::InitializePollyClient() {
     MyPollyClient = MakeUnique<MockPollyClient>();
 }
 
-void UTestableSpeechComponent::GenerateSpeechSync(const EVoiceId VoiceId) {
-    Super::GenerateSpeechSync(VoiceId);
+void UTestableSpeechComponent::GenerateSpeechSync(const FString text, const EVoiceId VoiceId) {
+    Super::GenerateSpeechSync(text, VoiceId);
 }
 
 void UTestableSpeechComponent::SetTimer(float CurrentVisemeDurationSeconds) {

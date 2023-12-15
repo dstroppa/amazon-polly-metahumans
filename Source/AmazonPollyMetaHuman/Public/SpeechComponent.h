@@ -23,8 +23,6 @@
 #include "Sound/SoundWaveProcedural.h"
 #include <aws/core/Aws.h>
 #include "PollyClient.h"
-#include "LexClient.h"
-#include "LambdaClient.h"
 #include <chrono>
 #include "Runtime/Engine/Public/LatentActions.h"
 #include "Viseme.h"
@@ -128,13 +126,14 @@ protected:
     * Blueprint function for calling Lex API to generate Resposne text.
     * @param text - the text to be synthesized by Polly (the maximum length of input text can be up to 3000 characters)
     */
-    virtual void GenerateTextResponseSync(const FString text);
+    //virtual void GenerateTextResponseSync(const FString text);
     /**
     * Blueprint function for calling Polly API to generate Viseme/Audio data.
     * One of the GenerateSpeech* functions must be called before StartSpeech() function.
+    * @param text - the text to be synthesized by Polly (the maximum length of input text can be up to 3000 characters) 
     * @param VoiceId - enum for VoiceId for use in calling Polly
     */
-    virtual void GenerateSpeechSync(const EVoiceId VoiceId);
+    virtual void GenerateSpeechSync(const FString text, const EVoiceId VoiceId);
     /**
     * Each time this method is called it plays back the next viseme in the speech.
     */
@@ -174,9 +173,9 @@ protected:
     /**
     * LexClient state for calling Lex SDK
     */
-    TUniquePtr<LexClient> MyLexClient;
+    //TUniquePtr<LexClient> MyLexClient;
     //LambdaClient state for calling Lambda SDK
-    TUniquePtr <LambdaClient> MyLambdaClient;
+    //TUniquePtr <LambdaClient> MyLambdaClient;
 
 private:
     
@@ -191,7 +190,7 @@ private:
     * @param text - th question asked
     * @return bool - boolean indicating success/failure of Lex call
     */
-    bool GenerateLambdaResponse(const FString& text);
+   // bool GenerateLambdaResponse(const FString& text);
     /**
     * Calls the PollyClient to generate Polly Audio data
     * @param text - the text synthesized by Polly
@@ -211,14 +210,14 @@ private:
     * @param text - the question asked)
     * @return LexRequest - the configured LexRequest
     */
-    Aws::LexRuntimeV2::Model::RecognizeTextRequest CreateLexTextRequest(const FString& Text) const;
+    //Aws::LexRuntimeV2::Model::RecognizeTextRequest CreateLexTextRequest(const FString& Text) const;
     /**
     * Returns an InvokeRequest that is configured to call the specified Lambda function with the provided payload
     * @param functionName - the name of the Lambda function to invoke
     * @param payload - JSON-formatted string to provide as input to the Lambda function
     * @return InvokeRequest - the configured InvokeRequest
     */
-    Aws::Lambda::Model::InvokeRequest CreateLambdaInvokeRequest(const FString& functionName, const FString& payload) const;
+    //Aws::Lambda::Model::InvokeRequest CreateLambdaInvokeRequest(const FString& functionName, const FString& payload) const;
 
     /**
     * Returns a PollyRequest that is configured to return pcm audio data with a given text and VoiceId
@@ -268,11 +267,11 @@ private:
     /*
     * Initializes the UnrealLexClient
     */
-    virtual void InitializeLexClient();
+    //virtual void InitializeLexClient();
     /*
     * Initializes the UnrealLambdaClient
     */
-    virtual void InitializeLambdaClient();
+    //virtual void InitializeLambdaClient();
     /*
     * Mutex for thread-safe mutation of internal state.
     */
